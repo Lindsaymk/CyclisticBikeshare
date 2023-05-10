@@ -1,0 +1,320 @@
+---
+title: "cyclistic bike share"
+author: "Lindsay Kyalo"
+date: "2023-04-12"
+output: html_document
+---
+
+```{r} setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+options (repos = list(CRAN = "https://cran.rstudio.com/"))
+```
+
+
+```{r}
+data(ridedata1)
+```
+```{r}
+install.packages("tidyverse")
+install.packages("dplyr")
+install.packages("readr")
+install.packages("janitor")
+install.packages("lubridate")
+```
+```{r}
+#load packages
+library(tidyverse) 
+library(dplyr)
+library(readr)
+library(janitor)
+library(lubridate)
+```
+
+
+```{r}
+#import csv files
+df1 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202004-divvy-tripdata.csv")
+df2 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202005-divvy-tripdata.csv")
+df3 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202006-divvy-tripdata.csv")
+df4 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202007-divvy-tripdata.csv")
+df5 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202008-divvy-tripdata.csv")
+df6 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202009-divvy-tripdata.csv")
+df7 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202010-divvy-tripdata.csv")
+df8 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202011-divvy-tripdata.csv")
+df9 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202012-divvy-tripdata.csv")
+df10 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202101-divvy-tripdata.csv")
+
+df11 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202102-divvy-tripdata.csv")
+df12 <- read.csv("C:/Users/Hp/Desktop/capstone/file extracts/202103-divvy-tripdata.csv")
+
+```
+
+
+```{r}
+#merge csv files
+bikeshare <- rbind(df1, df2, df3, df4, df5, df6, df7, df8, df9, df10, df11, df12)
+
+```
+
+```{r}
+#removing empty rows and columns
+dim(bikeshare)
+bikeshare_cleaned <- na.omit(bikeshare)
+ridedata <- bikeshare_cleaned[,complete.cases(t(bikeshare_cleaned))]
+dim(ridedata)
+
+```
+
+
+```{r}
+#converting date and time from character to date and time
+ridedata$started_at <- lubridate::ymd_hms(ridedata$started_at)
+ridedata$ended_at <- lubridate::ymd_hms(ridedata$ended_at)
+
+```
+
+
+```{r}
+#extract time from time and date
+ridedata$start_time <- format(ridedata$started_at, format = "%H:%M:%S")
+ridedata$end_time <- format(ridedata$ended_at, format = "%H:%M:%S")
+
+```
+
+
+```{r}
+#convert the time from character to time stamps
+ridedata$start_time <- lubridate::hms(ridedata$start_time)
+ridedata$end_time <- lubridate::hms(ridedata$end_time)
+
+```
+
+
+```{r}
+#extract date from time and date
+ridedata$start_date <- lubridate::ymd(substr(ridedata$started_at, 1, 10))
+ridedata$end_date <- lubridate::ymd(substr(ridedata$ended_at, 1, 10))
+
+```
+
+
+```{r}
+#days of the week
+ridedata$day <- weekdays(ridedata$started_at)
+```
+```{r}
+#time of day
+ start_hour <- lubridate::hour(ridedata$start_time)
+ ridedata$time_of_day <- ifelse(start_hour < 12, "morning",
+                                ifelse(start_hour < 18, "afternoon", "evening"))
+```
+ 
+ 
+```{r}
+#ride_length
+ 
+ridedata$start_time <- as.POSIXct((ridedata$start_time), origin = "1970-01-01")
+ ridedata$end_time <- as.POSIXct((ridedata$end_time), origin = "1970-01-01")
+ ridedata$trip_duration <- difftime(ridedata$end_time, ridedata$start_time, units = "mins")
+```
+
+```{r} 
+ #add type of day
+ 
+daytype <- as.Date((ridedata$start_date), by = "day", length.out = 7)
+ ridedata <- ridedata %>% mutate(day_type = 
+                                   case_when(day == "Monday" ~ "weekday",
+                                             day == "Tuesday" ~ "weekday",
+                                             day == "Wednesday" ~ "weekday",
+                                             day == "Thursday" ~ "weekday",
+                                             day == "Friday" ~ "weekday",
+                                             day == "Saturday" ~ "weekend",
+                                             day == "Sunday" ~ "weekend"))
+ 
+ 
+  ridedata$year <- format(as_date(ridedata$start_date), "%Y") #add the year
+ ridedata$month <- format (as_date(ridedata$start_date), "%m") #add the month
+ ridedata$month <- month.name[as.numeric(format(ridedata$start_date, "%m"))] 
+```
+ 
+```{r}
+ #add seasons of the year
+ 
+ ridedata <- ridedata %>% mutate(seasons = 
+                                   case_when(month == "January" ~ "winter",
+                                             month == "February" ~ "winter",
+                                             month == "March" ~ "spring",
+                                             month == "April" ~ "spring",
+                                             month == "May" ~ "spring",
+                                             month == "June" ~ "summer",
+                                             month == "July" ~ "summer",
+                                             month == "August" ~ "summer",
+                                             month == "September" ~ "fall",
+                                             month == "October" ~ "fall",
+                                             month == "November" ~ "fall",
+                                             month == "December" ~ "winter"))
+  
+```
+ #data cleaning
+ 
+ #remove unnecessary columns
+
+```{r}
+  #data cleaning
+ 
+ #remove unnecessary columns
+unwanted_cols <- c("start_lat", "end_lat", "start_lng", "end_lng")
+ clean_ridedata <- select(ridedata, -unwanted_cols)
+ clean_ridedata
+```
+ 
+```{r}
+ ridedata_cleaned <- na.omit(clean_ridedata)
+ ridedata1 <- ridedata_cleaned[,complete.cases(t(ridedata_cleaned))]
+  ridedata1 <- distinct(ridedata1)
+   ridedata1 <- ridedata1[!(ridedata1$trip_duration <= 0),]
+ dim(ridedata1)
+```
+
+```{r}
+total_rides <- nrow(ridedata1) #number of rides
+ mean(ridedata1$trip_duration) #average duration of trips
+```
+
+```{r}
+  # daily usage
+ 
+ ridedata1%>%
+   count(day)
+ ggplot(data = ridedata1, mapping = aes(x = day)) + geom_bar()
+```
+```{r} 
+ #rides by member_type
+ 
+ ridedata1%>%
+   group_by(member_casual)%>%
+   count(member_casual)
+ ggplot(data = ridedata1, mapping = aes(x = member_casual)) + geom_bar()
+```
+```{r} 
+ #type of bike
+ 
+ ridedata1 %>% 
+   group_by(rideable_type) %>%
+   count(rideable_type)
+ ggplot(data = ridedata1, mapping = aes(x = rideable_type)) + geom_bar()
+```
+
+```{r}
+#bike choice by riders
+ 
+ member_type <- ridedata1 %>% 
+   group_by(member_casual, rideable_type) %>%
+   count(rideable_type)
+ member_type
+ 
+ ggplot(data = as.data.frame(member_type), mapping = aes(x = member_casual, y = n, fill = rideable_type)) +geom_bar(stat = 'identity')
+```
+```{r} 
+ #bike type with rider
+ 
+ rideable_type <-ridedata1 %>% 
+   group_by(rideable_type, member_casual) %>%
+   count(member_casual)
+ rideable_type
+ ggplot(data = as.data.frame(rideable_type), mapping = aes(x = rideable_type, y = n, fill = member_casual)) +geom_bar(stat = 'identity')
+ 
+```
+
+```{r}
+#time of day
+  ridedata1 %>%
+    group_by(time_of_day)%>%
+    count(time_of_day)
+  
+  ridedata1 %>%
+    group_by(time_of_day, member_casual)%>%
+    count(time_of_day)
+  
+  #month
+  ridedata1 %>%
+    count(month)
+  
+  #season
+  ridedata1 %>% 
+    count(seasons)
+```
+
+```{r}
+ #trip duration during different times of day
+  ridedata1 %>%
+    group_by(member_casual) %>%
+    summarise_at(vars(trip_duration),
+                 list(start_time = mean))
+  
+  #morning
+  
+  ridedata1 %>%
+    group_by(member_casual) %>%
+    filter(time_of_day == "morning") %>%
+    summarise_at(vars(trip_duration),
+                 list(start_time = mean))
+  #afternoon
+  
+  ridedata1 %>%
+    group_by(member_casual) %>%
+    filter(time_of_day == "afternoon") %>%
+    summarise_at(vars(trip_duration),
+                 list(start_time = mean))
+  
+  #evening
+
+  ridedata1 %>%
+    group_by(member_casual) %>%
+    filter(time_of_day == "evening") %>%
+    summarise_at(vars(trip_duration),
+                 list(start_time = mean))
+```
+
+```{r}
+#day of the week
+  
+  ridedata1 %>% 
+    group_by(day, member_casual) %>%
+    summarise_at(vars(trip_duration),
+                 list(start_time = mean))
+  
+  ridedata1 %>% 
+    group_by(day_type, member_casual) %>%
+    summarise_at(vars(trip_duration),
+                 list(start_time = mean))
+```
+
+```{r}
+#daily rides of members by type
+  ridedata1$day <- ordered(ridedata1$day, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+  ridedata1 %>%
+    group_by(member_casual, day) %>%     
+    summarise(total_rides = n(),`trip_duration` = mean(trip_duration)) %>% 
+    arrange(member_casual) %>% 
+  ggplot(aes(x=day, y=total_rides, fill = member_casual)) + geom_col(position = "dodge") + 
+    labs(x= "Day", y= "Total Number of Rides", title = "Rides per Day", fill = "Type of Membership") + 
+    scale_y_continuous(breaks = c(100000, 200000, 300000, 400000), labels = c("100K", "200K", "300K", "400K")) + theme(axis.text.x = element_text(angle = 45))
+  
+```
+
+```{r}
+#monthly rides of members by type
+  ridedata1$seasons <- ordered(ridedata1$seasons, levels=c("winter", "spring", "summer", "fall"))
+  ridedata1 %>%
+  group_by(member_casual, seasons) %>%     
+    summarise(total_rides = n(),`trip_duration` = mean(trip_duration)) %>% 
+    arrange(member_casual) %>% 
+    ggplot(aes(x=seasons, y=total_rides, fill = member_casual)) + geom_col(position = "dodge") + 
+    labs(x= "Season", y= "Total Number of Rides", title = "Rides per Season", fill = "Type of Membership") + 
+    scale_y_continuous(breaks = c(100000, 200000, 300000, 400000), labels = c("100K", "200K", "300K", "400K")) + theme(axis.text.x = element_text(angle = 45))
+  
+```
+
